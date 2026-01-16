@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<recipients>
+  <recipient>
+    <email>john.doe@example.com</email>
+    <name>John Doe</name>
+    <company>ABC Corporation</company>
+    <position>Manager</position>
+  </recipient>
+  <recipient>
+    <email>jane.smith@example.com</email>
+    <name>Jane Smith</name>
+    <company>XYZ Industries</company>
+    <position>Director</position>
+  </recipient>
+  <recipient>
+    <email>bob.johnson@example.com</email>
+    <name>Bob Johnson</name>
+    <company>Tech Solutions</company>
+    <position>CTO</position>
+  </recipient>
+</recipients>
