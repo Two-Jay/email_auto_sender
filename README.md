@@ -77,14 +77,44 @@ email_auto_sender/
 - npm 또는 yarn
 - SMTP 서버 접근 권한 (Gmail, SendGrid 등)
 
-### 1. 저장소 클론
+### 빠른 시작 (추천)
+
+배쉬 스크립트를 사용하여 한 번에 설치하고 실행할 수 있습니다:
+
+```bash
+# 1. 설치
+./setup.sh
+
+# 2. .env 파일 수정 (SMTP 설정)
+nano .env  # 또는 vi .env
+
+# 3. 실행
+./start.sh
+```
+
+브라우저에서 `http://localhost:3000`을 엽니다.
+
+### 사용 가능한 스크립트
+
+| 스크립트 | 설명 | 명령어 |
+|---------|------|--------|
+| **setup.sh** | 의존성 설치 및 초기 설정 | `./setup.sh` |
+| **start.sh** | 백그라운드로 서버 시작 | `./start.sh` |
+| **stop.sh** | 실행 중인 서버 중지 | `./stop.sh` |
+| **dev.sh** | 개발 모드 (별도 터미널) | `./dev.sh` |
+
+### 수동 설치 및 실행
+
+스크립트를 사용하지 않고 수동으로 설치하려면:
+
+#### 1. 저장소 클론
 
 ```bash
 git clone <repository-url>
 cd email_auto_sender
 ```
 
-### 2. 환경 변수 설정
+#### 2. 환경 변수 설정
 
 `.env.example` 파일을 `.env`로 복사하고 설정값을 입력합니다:
 
@@ -114,13 +144,13 @@ DEFAULT_SENDER_EMAIL=your-email@gmail.com
 FRONTEND_URL=http://localhost:3000
 ```
 
-#### Gmail 사용 시 설정 방법
+##### Gmail 사용 시 설정 방법
 
 1. Google 계정의 2단계 인증 활성화
 2. [앱 비밀번호 생성](https://myaccount.google.com/apppasswords)
 3. 생성된 16자리 비밀번호를 `SMTP_PASS`에 입력
 
-### 3. 백엔드 설치 및 실행
+#### 3. 백엔드 설치 및 실행
 
 ```bash
 cd backend
@@ -131,7 +161,7 @@ npm start
 
 서버가 `http://localhost:5000`에서 실행됩니다.
 
-### 4. 프론트엔드 설치 및 실행
+#### 4. 프론트엔드 설치 및 실행
 
 새 터미널에서:
 
