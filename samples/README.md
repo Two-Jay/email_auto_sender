@@ -1,52 +1,55 @@
 # 샘플 파일
 
-이 디렉토리에는 이메일 자동 발신 시스템을 테스트하기 위한 샘플 파일이 포함되어 있습니다.
+## 엑셀 파일 형식
 
-## 파일 목록
+수신자 정보를 담은 엑셀 파일은 다음 형식을 따라야 합니다:
 
-### recipients_sample.xml
-XML 형식의 수신자 목록 샘플 파일입니다.
+### 예시 1: 기본 형식
 
-**사용 방법**:
-1. 웹 앱의 "수신자 관리" 탭으로 이동
-2. "파일 선택" 버튼 클릭
-3. `recipients_sample.xml` 파일 선택
-4. 미리보기 확인 후 업로드
+| email | name | company |
+|-------|------|---------|
+| user1@example.com | 홍길동 | A회사 |
+| user2@example.com | 김철수 | B회사 |
+| user3@example.com | 이영희 | C회사 |
 
-## Excel 샘플 파일 만들기
+### 예시 2: 확장 형식
 
-Excel 파일은 다음 형식으로 작성하세요:
+| email | name | company | position | date |
+|-------|------|---------|----------|------|
+| user1@example.com | 홍길동 | A회사 | 대리 | 2024-01-15 |
+| user2@example.com | 김철수 | B회사 | 과장 | 2024-01-16 |
 
-| Email | Name | Company | Position |
-|-------|------|---------|----------|
-| john.doe@example.com | John Doe | ABC Corporation | Manager |
-| jane.smith@example.com | Jane Smith | XYZ Industries | Director |
-| bob.johnson@example.com | Bob Johnson | Tech Solutions | CTO |
+## 규칙
 
-**필수 컬럼**: Email (또는 email, 이메일)
-**선택 컬럼**: Name, 기타 원하는 변수명
+1. **필수 열**: `email` 열은 반드시 포함되어야 합니다
+2. **헤더 행**: 첫 번째 행은 헤더(변수명)로 사용됩니다
+3. **변수명**: 헤더의 값이 템플릿에서 사용할 변수명이 됩니다
+4. **데이터 타입**: 모든 데이터는 텍스트로 처리됩니다
 
-파일을 `.xlsx` 또는 `.xls` 형식으로 저장한 후 업로드하세요.
+## 템플릿에서 사용 예시
 
-## 템플릿 변수 사용 예시
+엑셀 파일에 `name`, `company`, `position` 열이 있다면:
 
-위 샘플 파일을 사용하면 다음 변수를 이메일 템플릿에서 사용할 수 있습니다:
-
-- `{{name}}` - 수신자 이름
-- `{{email}}` - 수신자 이메일
-- `{{company}}` - 회사명
-- `{{position}}` - 직책
-
-**이메일 예시**:
-
+**제목:**
 ```
-제목: {{company}} {{name}}님께 드리는 특별한 제안
-
-본문:
-안녕하세요 {{name}}님,
-
-{{company}}의 {{position}}로 계신다는 소식을 들었습니다.
-저희는 귀사에 특별한 제안을 드리고자 합니다.
-
-...
+{{name}}님께 드리는 {{company}} 채용 안내
 ```
+
+**내용:**
+```html
+<p>안녕하세요 {{name}}님,</p>
+<p>{{company}}의 {{position}} 직무에 지원해주셔서 감사합니다.</p>
+```
+
+## 엑셀 파일 생성 방법
+
+1. Microsoft Excel, Google Sheets, LibreOffice Calc 등에서 생성
+2. 첫 행에 헤더 작성
+3. 두 번째 행부터 데이터 입력
+4. `.xlsx` 또는 `.xls` 형식으로 저장
+
+## 주의사항
+
+- 이메일 주소가 유효하지 않은 행은 자동으로 건너뜁니다
+- 빈 값(NULL)은 빈 문자열로 처리됩니다
+- 특수문자는 그대로 유지됩니다

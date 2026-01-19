@@ -1,410 +1,247 @@
-# CLAUDE.md - AI Assistant Guide for Email Auto Sender
+# Email Auto Sender - 개발 가이드
 
-This document provides comprehensive guidance for AI assistants working on the Email Auto Sender codebase.
+## 프로젝트 개요
 
-## Project Overview
+Naver와 Google 메일을 기반으로 한 자동 메일링 웹 애플리케이션
 
-**Email Auto Sender** is an automated email sending system designed to streamline email communications. The project aims to provide reliable, scheduled, and template-based email sending capabilities.
+### 주요 기능
+- 멀티 메일 서비스 지원 (Naver, Google)
+- 템플릿 변수 시스템 ({{변수명}} 형식)
+- 리치 텍스트 에디터 (Quill)
+- 이미지 삽입 및 위치 편집
+- CC 설정
+- 엑셀 파일 업로드 (대량 발송)
+- 배치 처리 및 발송 간격 조절
 
-### Key Objectives
-- Automate email sending workflows
-- Support multiple email providers (SMTP, API-based services)
-- Provide template management and personalization
-- Enable scheduled and batch email operations
-- Ensure secure credential management
-- Track email delivery status and metrics
+## 기술 스택
 
-## Repository Information
+### Backend
+- **Python 3.9+**
+- **FastAPI**: 웹 프레임워크
+- **smtplib**: SMTP 메일 발송
+- **pandas/openpyxl**: 엑셀 파일 처리
+- **pydantic**: 데이터 검증
+- **Uvicorn**: ASGI 서버
 
-- **Repository**: Two-Jay/email_auto_sender
-- **Primary Branch**: TBD (will be established upon first commit)
-- **Development Branch Pattern**: `claude/claude-md-<session-id>`
-- **Status**: New repository (no commits yet)
+### Frontend
+- **React 18**
+- **React Bootstrap**: UI 컴포넌트
+- **Quill**: 리치 텍스트 에디터
+- **Axios**: HTTP 클라이언트
+- **React Icons**: 아이콘
 
-## Codebase Structure (Planned)
+## 프로젝트 구조
 
 ```
 email_auto_sender/
-├── src/                    # Source code
-│   ├── config/            # Configuration management
-│   ├── services/          # Email service providers
-│   ├── templates/         # Email template engine
-│   ├── scheduler/         # Job scheduling logic
-│   ├── models/            # Data models
-│   ├── utils/             # Helper utilities
-│   └── index.js/ts        # Main entry point
-├── tests/                 # Test files
-│   ├── unit/             # Unit tests
-│   └── integration/      # Integration tests
-├── templates/             # Email template files
-├── config/               # Configuration files
-│   └── .env.example      # Environment variables template
-├── docs/                 # Documentation
-├── scripts/              # Utility scripts
-├── package.json          # Node.js dependencies (if applicable)
-├── requirements.txt      # Python dependencies (if applicable)
-├── .gitignore           # Git ignore rules
-├── README.md            # Project documentation
-└── CLAUDE.md            # This file
+├── backend/
+│   ├── app/
+│   │   ├── routes/          # API 라우터
+│   │   │   ├── email.py     # 메일 발송 API
+│   │   │   ├── template.py  # 템플릿 관리 API
+│   │   │   ├── recipient.py # 수신자 관리 API
+│   │   │   └── upload.py    # 파일 업로드 API
+│   │   ├── services/        # 비즈니스 로직
+│   │   │   ├── email_service.py      # 메일 발송 서비스
+│   │   │   └── template_service.py   # 템플릿 처리 서비스
+│   │   ├── models/          # 데이터 모델
+│   │   │   └── email.py     # 이메일 관련 모델
+│   │   ├── config.py        # 설정
+│   │   └── main.py          # 메인 앱
+│   ├── uploads/             # 업로드된 파일
+│   └── requirements.txt     # Python 패키지
+├── frontend/
+│   ├── src/
+│   │   ├── components/      # React 컴포넌트
+│   │   │   ├── EmailEditor.js      # 메일 에디터
+│   │   │   ├── RecipientManager.js # 수신자 관리
+│   │   │   └── EmailSender.js      # 메일 발송
+│   │   ├── services/
+│   │   │   └── api.js       # API 클라이언트
+│   │   ├── App.js           # 메인 앱
+│   │   └── index.js         # 엔트리 포인트
+│   └── package.json         # Node.js 패키지
+├── data/                    # 데이터 저장 (JSON)
+├── samples/                 # 샘플 파일
+├── .env.example             # 환경 변수 예시
+├── setup.sh                 # 설치 스크립트
+├── start.sh                 # 실행 스크립트
+├── stop.sh                  # 종료 스크립트
+└── dev.sh                   # 개발 모드 스크립트
 ```
 
-## Technology Stack Considerations
+## API 엔드포인트
 
-### Backend Options
-- **Node.js**: Popular for email services, excellent async handling
-  - Libraries: nodemailer, node-schedule, handlebars
-- **Python**: Strong email and automation libraries
-  - Libraries: smtplib, schedule, jinja2, celery
+### 템플릿 관리
+- `GET /api/template/` - 모든 템플릿 조회
+- `POST /api/template/` - 템플릿 생성
+- `GET /api/template/{id}` - 특정 템플릿 조회
+- `PUT /api/template/{id}` - 템플릿 수정
+- `DELETE /api/template/{id}` - 템플릿 삭제
 
-### Email Service Providers
-- **SMTP**: Direct mail server connection
-- **SendGrid**: API-based email delivery
-- **AWS SES**: Amazon Simple Email Service
-- **Mailgun**: Transactional email API
-- **Postmark**: Transactional email service
+### 수신자 관리
+- `GET /api/recipient/` - 모든 수신자 조회
+- `POST /api/recipient/` - 수신자 추가
+- `POST /api/recipient/bulk` - 대량 수신자 추가
+- `GET /api/recipient/{id}` - 특정 수신자 조회
+- `PUT /api/recipient/{id}` - 수신자 수정
+- `DELETE /api/recipient/{id}` - 수신자 삭제
+- `DELETE /api/recipient/` - 모든 수신자 삭제
 
-### Storage & Database
-- **SQLite**: Lightweight for logs and tracking
-- **PostgreSQL/MySQL**: Production-grade relational DB
-- **MongoDB**: NoSQL for flexible schema
-- **Redis**: Caching and job queues
+### 파일 업로드
+- `POST /api/upload/excel` - 엑셀 파일 업로드
+- `POST /api/upload/image` - 이미지 업로드
+- `GET /api/upload/images` - 이미지 목록 조회
+- `DELETE /api/upload/image/{filename}` - 이미지 삭제
 
-## Development Workflows
+### 이메일 발송
+- `POST /api/email/send` - 단일 메일 발송
+- `POST /api/email/send-bulk` - 대량 메일 발송
+- `POST /api/email/preview` - 메일 미리보기
+- `POST /api/email/validate-template` - 템플릿 검증
 
-### 1. Initial Setup
+## 개발 환경 설정
 
-When setting up the project for the first time:
+### 1. 필수 요구사항
+- Python 3.9 이상
+- Node.js 16 이상
+- npm 또는 yarn
 
+### 2. 설치
 ```bash
-# Clone and navigate to repository
-cd /home/user/email_auto_sender
+# 저장소 클론
+git clone https://github.com/Two-Jay/email_auto_sender.git
+cd email_auto_sender
 
-# Initialize your language environment
-# For Node.js:
-npm init -y
-npm install
+# 자동 설치
+./setup.sh
 
-# For Python:
+# 수동 설치
+# 백엔드
+cd backend
 python -m venv venv
-source venv/bin/activate  # Linux/Mac
+source venv/bin/activate
 pip install -r requirements.txt
+
+# 프론트엔드
+cd frontend
+npm install
 ```
 
-### 2. Branch Management
-
-- **Always work on designated Claude branches**: `claude/claude-md-<session-id>`
-- **Never push directly to main/master without explicit permission**
-- **Create feature branches from the current development branch**
-
+### 3. 환경 변수 설정
 ```bash
-# Verify current branch
-git status
-
-# Create new feature branch if needed
-git checkout -b feature/your-feature-name
-
-# After completing work, push to designated branch
-git push -u origin claude/claude-md-<session-id>
+cp .env.example .env
+# .env 파일 편집
 ```
 
-### 3. Commit Guidelines
-
-Follow conventional commit format:
-
-```
-<type>(<scope>): <subject>
-
-<body>
-
-<footer>
-```
-
-**Types**:
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `style`: Code style changes (formatting)
-- `refactor`: Code refactoring
-- `test`: Adding or updating tests
-- `chore`: Maintenance tasks
-
-**Examples**:
-```
-feat(email): add SendGrid integration
-fix(scheduler): resolve timezone handling bug
-docs(readme): update installation instructions
-```
-
-### 4. Testing Strategy
-
-- Write tests before or alongside implementation
-- Maintain minimum 80% code coverage
-- Run tests before committing
-
+### 4. 개발 서버 실행
 ```bash
-# Run all tests
-npm test  # or pytest
+# 자동 실행 (tmux 필요)
+./dev.sh
 
-# Run specific test file
-npm test tests/unit/email.test.js
+# 수동 실행
+# 터미널 1 - 백엔드
+cd backend
+source venv/bin/activate
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-# Run with coverage
-npm test -- --coverage
+# 터미널 2 - 프론트엔드
+cd frontend
+npm start
 ```
 
-### 5. Code Review Checklist
+## 주요 기능 구현
 
-Before committing, verify:
-- [ ] Code follows project style conventions
-- [ ] No sensitive data (API keys, passwords) in code
-- [ ] Environment variables used for configuration
-- [ ] Tests pass successfully
-- [ ] Documentation updated if needed
-- [ ] No debug/console logs in production code
-- [ ] Error handling implemented properly
-- [ ] Security best practices followed
+### 템플릿 변수 치환
 
-## Key Conventions for AI Assistants
+템플릿에서 `{{변수명}}` 형식으로 변수를 사용합니다.
 
-### Security Requirements
-
-1. **Never hardcode sensitive data**:
-   - API keys, passwords, tokens → Use environment variables
-   - Create `.env.example` with dummy values
-   - Add `.env` to `.gitignore`
-
-2. **Input validation**:
-   - Validate all email addresses
-   - Sanitize user inputs
-   - Prevent email injection attacks
-
-3. **Rate limiting**:
-   - Implement rate limits to prevent abuse
-   - Respect email provider limits
-
-4. **Encryption**:
-   - Use TLS/SSL for SMTP connections
-   - Encrypt stored credentials
-
-### Code Quality Standards
-
-1. **Modular design**:
-   - Single responsibility principle
-   - Reusable components
-   - Clear separation of concerns
-
-2. **Error handling**:
-   - Always use try-catch blocks
-   - Log errors appropriately
-   - Provide meaningful error messages
-   - Implement retry logic for transient failures
-
-3. **Naming conventions**:
-   - Use descriptive variable/function names
-   - Follow language-specific conventions (camelCase for JS, snake_case for Python)
-   - Constants in UPPER_CASE
-
-4. **Comments and documentation**:
-   - Document complex logic
-   - Add JSDoc/docstrings for functions
-   - Keep README.md updated
-
-### Email-Specific Best Practices
-
-1. **Template management**:
-   - Use template engines (Handlebars, Jinja2)
-   - Support variable substitution
-   - Provide plain-text alternatives to HTML
-
-2. **Scheduling**:
-   - Use cron or job scheduling libraries
-   - Handle timezone conversions properly
-   - Implement job persistence (survive restarts)
-
-3. **Delivery tracking**:
-   - Log all email attempts
-   - Track delivery status
-   - Handle bounces and complaints
-
-4. **Batch processing**:
-   - Send emails in batches to avoid rate limits
-   - Implement queue system for large volumes
-   - Add delays between batches
-
-5. **Testing**:
-   - Use test email addresses
-   - Mock email providers in tests
-   - Test with various email clients
-
-### Configuration Management
-
-Always use environment variables for:
-- Email provider credentials
-- SMTP server details
-- API keys and tokens
-- Database connection strings
-- Application settings
-
-Example `.env.example`:
-```env
-# Email Provider Configuration
-EMAIL_PROVIDER=smtp
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_USER=your_username
-SMTP_PASS=your_password
-
-# API Keys (if using email service APIs)
-SENDGRID_API_KEY=your_api_key_here
-
-# Database
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=email_sender
-DB_USER=user
-DB_PASS=password
-
-# Application Settings
-NODE_ENV=development
-LOG_LEVEL=info
-RATE_LIMIT_PER_MINUTE=60
+**backend/app/services/template_service.py:**
+```python
+def render_template(template: str, variables: Dict[str, str]) -> str:
+    result = template
+    for key, value in variables.items():
+        pattern = r'\{\{' + re.escape(key) + r'\}\}'
+        result = re.sub(pattern, str(value), result)
+    return result
 ```
 
-## Common Tasks
+### 메일 발송
 
-### Adding a New Email Provider
+**backend/app/services/email_service.py:**
+- SMTP 연결 및 인증
+- 템플릿 변수 치환
+- HTML 이메일 생성
+- 배치 발송 (간격 조절)
 
-1. Create provider interface in `src/services/providers/`
-2. Implement provider-specific logic
-3. Add provider configuration to config
-4. Write unit tests for the provider
-5. Update documentation
+### 엑셀 파일 처리
 
-### Creating Email Templates
+**backend/app/routes/upload.py:**
+- pandas로 엑셀 파일 읽기
+- email 열 필수 확인
+- 나머지 열을 변수로 변환
 
-1. Add template file to `templates/` directory
-2. Use consistent variable naming: `{{variable_name}}`
-3. Include both HTML and plain-text versions
-4. Test with sample data
-5. Document available variables
+### 이미지 업로드
 
-### Implementing Scheduled Emails
+**frontend/src/components/EmailEditor.js:**
+- Quill 에디터의 이미지 핸들러 커스터마이징
+- 파일 업로드 후 에디터에 삽입
+- 서버에 이미지 저장
 
-1. Define schedule configuration
-2. Create job handler function
-3. Register job with scheduler
-4. Add persistence/recovery logic
-5. Test schedule execution
+## 데이터 저장
 
-## Troubleshooting Guide
+JSON 파일 기반으로 데이터를 저장합니다:
+- `data/templates.json` - 템플릿
+- `data/recipients.json` - 수신자
 
-### Email Not Sending
+## 보안 고려사항
 
-1. Check SMTP/API credentials
-2. Verify network connectivity
-3. Check provider rate limits
-4. Review error logs
-5. Validate email addresses
+1. **비밀번호 저장**: .env 파일은 git에 포함하지 않음
+2. **CORS**: 허용된 도메인만 접근 가능
+3. **파일 업로드**: 확장자 및 크기 검증
+4. **이메일 발송**: 배치 크기 및 간격 제한
 
-### Authentication Failures
+## Google 메일 설정
 
-1. Verify credentials in environment variables
-2. Check for special characters in passwords
-3. Ensure TLS/SSL settings match provider requirements
-4. Test with provider's diagnostic tools
+Google 메일을 사용하려면 "앱 비밀번호"가 필요합니다:
 
-### Scheduling Issues
+1. Google 계정 설정 → 보안
+2. 2단계 인증 활성화
+3. 앱 비밀번호 생성
+4. 생성된 16자리 비밀번호를 .env 파일에 입력
 
-1. Verify timezone configuration
-2. Check system time
-3. Review cron expression syntax
-4. Ensure scheduler service is running
+## Naver 메일 설정
 
-## Git Operations Best Practices
+Naver 메일은 일반 비밀번호를 사용합니다:
+- SMTP 서버: smtp.naver.com
+- 포트: 587 (TLS)
 
-### Pushing Changes
+## 문제 해결
 
-```bash
-# Always push to the designated Claude branch
-git push -u origin claude/claude-md-<session-id>
+### 메일 발송 실패
+- 발신자 이메일과 비밀번호 확인
+- Google의 경우 앱 비밀번호 사용 확인
+- SMTP 서버 주소와 포트 확인
 
-# If push fails due to network errors, retry with exponential backoff
-# The system will automatically retry up to 4 times: 2s, 4s, 8s, 16s
-```
+### 엑셀 업로드 실패
+- 파일 형식 확인 (.xlsx 또는 .xls)
+- email 열 존재 여부 확인
+- 파일 인코딩 확인
 
-### Fetching Updates
+### 이미지 업로드 실패
+- 파일 형식 확인 (jpg, png, gif 등)
+- 업로드 디렉토리 권한 확인
 
-```bash
-# Fetch specific branch
-git fetch origin <branch-name>
+## 향후 개선 사항
 
-# Pull with explicit branch
-git pull origin <branch-name>
-```
+- [ ] 데이터베이스 연동 (PostgreSQL, MongoDB)
+- [ ] 사용자 인증 시스템
+- [ ] 발송 예약 기능
+- [ ] 발송 결과 통계
+- [ ] 첨부파일 지원 강화
+- [ ] 이메일 템플릿 라이브러리
+- [ ] 다국어 지원
 
-### Safety Rules
+## 라이센스
 
-- **NEVER** update git config without permission
-- **NEVER** force push to main/master
-- **NEVER** skip hooks (--no-verify) without explicit request
-- **AVOID** `git commit --amend` unless explicitly required
-- **AVOID** destructive operations (hard reset, force push)
-
-## Communication Standards
-
-### When Reporting Progress
-
-- Be concise and specific
-- Use technical accuracy over emotional validation
-- Focus on facts and problem-solving
-- Report both successes and blockers
-
-### When Asking Questions
-
-- Use AskUserQuestion tool for clarifications
-- Present options without time estimates
-- Focus on what needs to be done, not when
-- Provide technical context for decisions
-
-## Resources & References
-
-### Email Standards
-- RFC 5321 (SMTP)
-- RFC 5322 (Internet Message Format)
-- CAN-SPAM Act compliance
-- GDPR email guidelines
-
-### Libraries & Tools
-
-**Node.js**:
-- nodemailer - Email sending
-- node-schedule - Job scheduling
-- handlebars - Template engine
-- dotenv - Environment management
-
-**Python**:
-- smtplib - SMTP protocol
-- email - Email message construction
-- schedule - Job scheduling
-- jinja2 - Template engine
-
-## Version History
-
-- **2026-01-16**: Initial CLAUDE.md creation for new repository
-
-## Notes for AI Assistants
-
-1. **Always read before writing**: Never propose changes to code you haven't read
-2. **Use TodoWrite**: Track tasks using the TodoWrite tool for complex work
-3. **Avoid over-engineering**: Keep solutions simple and focused
-4. **Security first**: Always validate inputs and protect credentials
-5. **Test thoroughly**: Write and run tests before committing
-6. **Document decisions**: Update this file when adding new patterns or conventions
-7. **Parallel operations**: When possible, make independent tool calls in parallel
-8. **Ask when uncertain**: Use AskUserQuestion tool for clarifications
-
----
-
-**Last Updated**: 2026-01-16
-**Maintained by**: AI Assistants working on this repository
-**Review Schedule**: Update when significant architecture changes occur
+MIT License
