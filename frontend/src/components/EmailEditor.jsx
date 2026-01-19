@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo, useCallback } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import { Form, Button, Alert } from 'react-bootstrap';
+import { Form, Alert } from 'react-bootstrap';
 import { uploadAPI } from '../services/api';
 
 const EmailEditor = ({ subject, setSubject, content, setContent }) => {
@@ -9,8 +9,42 @@ const EmailEditor = ({ subject, setSubject, content, setContent }) => {
   const [uploadError, setUploadError] = useState('');
   const quillRef = useRef(null);
 
+  // 이미지 업로드 핸들러
+  const imageHandler = useCallback(() => {
+    const input = document.createElement('input');
+    input.setAttribute('type', 'file');
+    input.setAttribute('accept', 'image/*');
+    input.click();
+
+    input.onchange = async () => {
+      const file = input.files[0];
+      if (!file) return;
+
+      setUploading(true);
+      setUploadError('');
+
+      try {
+        const response = await uploadAPI.uploadImage(file);
+        const imageUrl = `http://localhost:8000${response.data.url}`;
+
+        // Quill 에디터에 이미지 삽입
+        const quill = quillRef.current?.getEditor();
+        if (quill) {
+          const range = quill.getSelection() || { index: 0 };
+          quill.insertEmbed(range.index, 'image', imageUrl);
+          quill.setSelection(range.index + 1);
+        }
+      } catch (error) {
+        console.error('Image upload error:', error);
+        setUploadError('이미지 업로드에 실패했습니다.');
+      } finally {
+        setUploading(false);
+      }
+    };
+  }, []);
+
   // Quill 에디터 모듈 설정
-  const modules = {
+  const modules = useMemo(() => ({
     toolbar: {
       container: [
         [{ header: [1, 2, 3, 4, 5, 6, false] }],
@@ -30,39 +64,7 @@ const EmailEditor = ({ subject, setSubject, content, setContent }) => {
         image: imageHandler,
       },
     },
-  };
-
-  // 이미지 업로드 핸들러
-  function imageHandler() {
-    const input = document.createElement('input');
-    input.setAttribute('type', 'file');
-    input.setAttribute('accept', 'image/*');
-    input.click();
-
-    input.onchange = async () => {
-      const file = input.files[0];
-      if (!file) return;
-
-      setUploading(true);
-      setUploadError('');
-
-      try {
-        const response = await uploadAPI.uploadImage(file);
-        const imageUrl = `http://localhost:8000${response.data.url}`;
-
-        // Quill 에디터에 이미지 삽입
-        const quill = quillRef.current.getEditor();
-        const range = quill.getSelection();
-        quill.insertEmbed(range.index, 'image', imageUrl);
-        quill.setSelection(range.index + 1);
-      } catch (error) {
-        console.error('Image upload error:', error);
-        setUploadError('이미지 업로드에 실패했습니다.');
-      } finally {
-        setUploading(false);
-      }
-    };
-  }
+  }), [imageHandler]);
 
   const formats = [
     'header',
