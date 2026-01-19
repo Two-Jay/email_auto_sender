@@ -4,12 +4,26 @@
 }
 
 /* Quill Editor 커스터마이징 */
+.quill {
+  background-color: white;
+}
+
+.ql-toolbar {
+  background-color: #f8f9fa;
+  border: 1px solid #ced4da !important;
+  border-bottom: none !important;
+}
+
 .ql-container {
   font-size: 16px;
+  border: 1px solid #ced4da !important;
+  min-height: 400px;
 }
 
 .ql-editor {
   min-height: 400px;
+  max-height: 600px;
+  overflow-y: auto;
 }
 
 /* 버튼 스타일 */
