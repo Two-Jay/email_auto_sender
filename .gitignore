@@ -42,6 +42,10 @@ yarn-error.log*
 *.swo
 *~
 
+# Process management
+.proc/
+*.pid
+
 # OS
 .DS_Store
 Thumbs.db
