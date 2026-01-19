@@ -140,6 +140,55 @@ class EmailService:
                 "recipient": recipient.email
             }
 
+        except smtplib.SMTPAuthenticationError as e:
+            return {
+                "success": False,
+                "message": f"{recipient.email} 발송 실패: 인증 오류",
+                "recipient": recipient.email,
+                "error": "인증 실패 - 이메일 또는 비밀번호를 확인하세요"
+            }
+        except smtplib.SMTPRecipientsRefused as e:
+            return {
+                "success": False,
+                "message": f"{recipient.email} 발송 실패: 수신자 거부",
+                "recipient": recipient.email,
+                "error": "수신자 이메일 주소가 유효하지 않습니다"
+            }
+        except smtplib.SMTPSenderRefused as e:
+            return {
+                "success": False,
+                "message": f"{recipient.email} 발송 실패: 발신자 거부",
+                "recipient": recipient.email,
+                "error": "발신자 이메일 주소가 유효하지 않습니다"
+            }
+        except smtplib.SMTPDataError as e:
+            return {
+                "success": False,
+                "message": f"{recipient.email} 발송 실패: 데이터 오류",
+                "recipient": recipient.email,
+                "error": f"메일 내용 오류 - {str(e)}"
+            }
+        except smtplib.SMTPConnectError as e:
+            return {
+                "success": False,
+                "message": f"{recipient.email} 발송 실패: 연결 오류",
+                "recipient": recipient.email,
+                "error": "SMTP 서버 연결에 실패했습니다"
+            }
+        except smtplib.SMTPServerDisconnected as e:
+            return {
+                "success": False,
+                "message": f"{recipient.email} 발송 실패: 연결 끊김",
+                "recipient": recipient.email,
+                "error": "서버 연결이 끊어졌습니다"
+            }
+        except TimeoutError as e:
+            return {
+                "success": False,
+                "message": f"{recipient.email} 발송 실패: 시간 초과",
+                "recipient": recipient.email,
+                "error": "서버 응답 시간이 초과되었습니다"
+            }
         except Exception as e:
             return {
                 "success": False,
@@ -185,7 +234,10 @@ class EmailService:
                     results["success"] += 1
                 else:
                     results["failed"] += 1
-                    results["failed_recipients"].append(recipient.email)
+                    results["failed_recipients"].append({
+                        "email": recipient.email,
+                        "reason": result.get("error", "알 수 없는 오류")
+                    })
 
                 # 발송 간격 대기
                 if settings.delay_between_emails > 0:
