@@ -212,8 +212,17 @@ const EmailSender = ({ subject, content, recipients }) => {
             <div className="mt-2">
               <strong>실패한 수신자:</strong>
               <ul className="mb-0">
-                {result.failed_recipients.map((email, index) => (
-                  <li key={index}>{email}</li>
+                {result.failed_recipients.map((item, index) => (
+                  <li key={index}>
+                    {typeof item === 'string' ? (
+                      item
+                    ) : (
+                      <>
+                        {item.email}
+                        <span className="text-muted ms-2">- {item.reason}</span>
+                      </>
+                    )}
+                  </li>
                 ))}
               </ul>
             </div>
