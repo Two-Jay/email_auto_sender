@@ -1,103 +1,86 @@
-import React, { useState, useRef } from 'react';
-import { Form, Button, Alert, ButtonGroup } from 'react-bootstrap';
+import React, { useRef, useState } from 'react';
+import { Editor } from '@tinymce/tinymce-react';
+import { Form, Alert, Tab, Tabs } from 'react-bootstrap';
 import { uploadAPI } from '../services/api';
 
+// TinyMCE 셀프 호스팅을 위한 import
+import 'tinymce/tinymce';
+import 'tinymce/models/dom';
+import 'tinymce/themes/silver';
+import 'tinymce/icons/default';
+
+// 필요한 플러그인 import
+import 'tinymce/plugins/advlist';
+import 'tinymce/plugins/autolink';
+import 'tinymce/plugins/lists';
+import 'tinymce/plugins/link';
+import 'tinymce/plugins/image';
+import 'tinymce/plugins/charmap';
+import 'tinymce/plugins/preview';
+import 'tinymce/plugins/anchor';
+import 'tinymce/plugins/searchreplace';
+import 'tinymce/plugins/visualblocks';
+import 'tinymce/plugins/code';
+import 'tinymce/plugins/fullscreen';
+import 'tinymce/plugins/insertdatetime';
+import 'tinymce/plugins/media';
+import 'tinymce/plugins/table';
+import 'tinymce/plugins/help';
+import 'tinymce/plugins/wordcount';
+
+// TinyMCE 스킨 CSS
+import 'tinymce/skins/ui/oxide/skin.min.css';
+
 const EmailEditor = ({ subject, setSubject, content, setContent }) => {
+  const editorRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
-  const textareaRef = useRef(null);
+  const [activeTab, setActiveTab] = useState('visual');
+  const [htmlContent, setHtmlContent] = useState(content);
 
-  // 이미지 업로드 핸들러
-  const handleImageUpload = async () => {
-    const input = document.createElement('input');
-    input.setAttribute('type', 'file');
-    input.setAttribute('accept', 'image/*');
-    input.click();
-
-    input.onchange = async () => {
-      const file = input.files[0];
-      if (!file) return;
-
-      setUploading(true);
-      setUploadError('');
-
-      try {
-        const response = await uploadAPI.uploadImage(file);
-        const imageUrl = `http://localhost:8000${response.data.url}`;
-
-        // textarea에 이미지 태그 삽입
-        const textarea = textareaRef.current;
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const imageTag = `<img src="${imageUrl}" alt="이미지" style="max-width: 100%; height: auto;" />`;
-
-        const newContent = content.substring(0, start) + imageTag + content.substring(end);
-        setContent(newContent);
-
-        // 커서 위치 조정
-        setTimeout(() => {
-          textarea.selectionStart = textarea.selectionEnd = start + imageTag.length;
-          textarea.focus();
-        }, 0);
-      } catch (error) {
-        console.error('Image upload error:', error);
-        setUploadError('이미지 업로드에 실패했습니다.');
-      } finally {
-        setUploading(false);
-      }
-    };
-  };
-
-  // HTML 태그 삽입 헬퍼
-  const insertTag = (tagName, closeTag = true) => {
-    const textarea = textareaRef.current;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = content.substring(start, end);
-
-    let newText;
-    if (closeTag) {
-      newText = `<${tagName}>${selectedText}</${tagName}>`;
-    } else {
-      newText = `<${tagName}>`;
+  // 탭 전환 핸들러
+  const handleTabChange = (tab) => {
+    if (tab === 'html' && editorRef.current) {
+      // WYSIWYG -> HTML: 에디터 내용을 HTML로 가져오기
+      setHtmlContent(editorRef.current.getContent());
+    } else if (tab === 'visual' && editorRef.current) {
+      // HTML -> WYSIWYG: HTML 내용을 에디터에 설정
+      editorRef.current.setContent(htmlContent);
+      setContent(htmlContent);
     }
-
-    const newContent = content.substring(0, start) + newText + content.substring(end);
-    setContent(newContent);
-
-    // 커서 위치 조정
-    setTimeout(() => {
-      if (selectedText) {
-        textarea.selectionStart = start;
-        textarea.selectionEnd = start + newText.length;
-      } else {
-        const cursorPos = start + tagName.length + 2; // <tagName> 이후
-        textarea.selectionStart = textarea.selectionEnd = cursorPos;
-      }
-      textarea.focus();
-    }, 0);
+    setActiveTab(tab);
   };
 
-  // 링크 삽입
-  const insertLink = () => {
-    const textarea = textareaRef.current;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = content.substring(start, end);
+  // HTML 직접 편집 핸들러
+  const handleHtmlChange = (e) => {
+    const newHtml = e.target.value;
+    setHtmlContent(newHtml);
+    setContent(newHtml);
+  };
 
-    const url = prompt('링크 URL을 입력하세요:', 'https://');
-    if (!url) return;
+  // 이미지 업로드 핸들러 (TinyMCE용)
+  const imageUploadHandler = async (blobInfo) => {
+    setUploading(true);
+    setUploadError('');
 
-    const linkText = selectedText || '링크 텍스트';
-    const linkTag = `<a href="${url}">${linkText}</a>`;
+    try {
+      const file = blobInfo.blob();
+      const response = await uploadAPI.uploadImage(file);
+      const imageUrl = `http://localhost:8000${response.data.url}`;
+      return imageUrl;
+    } catch (error) {
+      console.error('Image upload error:', error);
+      setUploadError('이미지 업로드에 실패했습니다.');
+      throw new Error('이미지 업로드 실패');
+    } finally {
+      setUploading(false);
+    }
+  };
 
-    const newContent = content.substring(0, start) + linkTag + content.substring(end);
+  // 에디터 내용 변경 핸들러
+  const handleEditorChange = (newContent) => {
     setContent(newContent);
-
-    setTimeout(() => {
-      textarea.selectionStart = textarea.selectionEnd = start + linkTag.length;
-      textarea.focus();
-    }, 0);
+    setHtmlContent(newContent);
   };
 
   return (
@@ -116,79 +99,141 @@ const EmailEditor = ({ subject, setSubject, content, setContent }) => {
       </Form.Group>
 
       <Form.Group className="mb-3">
-        <Form.Label>내용 (HTML)</Form.Label>
-        {uploadError && <Alert variant="danger" dismissible onClose={() => setUploadError('')}>{uploadError}</Alert>}
+        <Form.Label>내용</Form.Label>
+        {uploadError && (
+          <Alert variant="danger" dismissible onClose={() => setUploadError('')}>
+            {uploadError}
+          </Alert>
+        )}
         {uploading && <Alert variant="info">이미지 업로드 중...</Alert>}
 
-        {/* HTML 편집 도구 */}
-        <div className="mb-2">
-          <ButtonGroup size="sm" className="me-2 mb-2">
-            <Button variant="outline-secondary" onClick={() => insertTag('b')} title="굵게">
-              <strong>B</strong>
-            </Button>
-            <Button variant="outline-secondary" onClick={() => insertTag('i')} title="이탤릭">
-              <em>I</em>
-            </Button>
-            <Button variant="outline-secondary" onClick={() => insertTag('u')} title="밑줄">
-              <u>U</u>
-            </Button>
-            <Button variant="outline-secondary" onClick={() => insertTag('s')} title="취소선">
-              <s>S</s>
-            </Button>
-          </ButtonGroup>
+        <Tabs
+          activeKey={activeTab}
+          onSelect={handleTabChange}
+          className="mb-2"
+        >
+          <Tab eventKey="visual" title="비주얼 편집기">
+            <div style={{ border: '1px solid #ced4da', borderRadius: '0.375rem' }}>
+              <Editor
+                onInit={(evt, editor) => {
+                  editorRef.current = editor;
+                }}
+                value={content}
+                onEditorChange={handleEditorChange}
+                init={{
+                  height: 400,
+                  menubar: true,
+                  plugins: [
+                    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                    'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                    'insertdatetime', 'media', 'table', 'help', 'wordcount'
+                  ],
+                  toolbar:
+                    'undo redo | blocks | ' +
+                    'bold italic forecolor backcolor | alignleft aligncenter ' +
+                    'alignright alignjustify | bullist numlist outdent indent | ' +
+                    'image link media | table | code | removeformat | help',
 
-          <ButtonGroup size="sm" className="me-2 mb-2">
-            <Button variant="outline-secondary" onClick={() => insertTag('h1')} title="제목 1">
-              H1
-            </Button>
-            <Button variant="outline-secondary" onClick={() => insertTag('h2')} title="제목 2">
-              H2
-            </Button>
-            <Button variant="outline-secondary" onClick={() => insertTag('h3')} title="제목 3">
-              H3
-            </Button>
-          </ButtonGroup>
+                  // 이미지 설정
+                  images_upload_handler: imageUploadHandler,
+                  automatic_uploads: true,
+                  images_reuse_filename: true,
+                  image_advtab: true,
+                  image_caption: true,
 
-          <ButtonGroup size="sm" className="me-2 mb-2">
-            <Button variant="outline-secondary" onClick={() => insertTag('p')} title="문단">
-              P
-            </Button>
-            <Button variant="outline-secondary" onClick={() => insertTag('br', false)} title="줄바꿈">
-              BR
-            </Button>
-            <Button variant="outline-secondary" onClick={insertLink} title="링크">
-              Link
-            </Button>
-          </ButtonGroup>
+                  // 이미지 드래그 & 리사이즈 설정
+                  object_resizing: true,
+                  resize_img_proportional: true,
 
-          <Button
-            variant="outline-primary"
-            size="sm"
-            onClick={handleImageUpload}
-            disabled={uploading}
-            className="mb-2"
-          >
-            📷 이미지 업로드
-          </Button>
-        </div>
+                  // 한국어 설정
+                  language: 'ko_KR',
+                  language_url: '',  // 한국어 팩 없으면 영어 사용
 
-        <Form.Control
-          as="textarea"
-          ref={textareaRef}
-          rows={15}
-          placeholder="HTML 코드를 입력하세요. 예: <p>안녕하세요, {{이름}}님!</p>"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          style={{
-            fontFamily: 'monospace',
-            fontSize: '14px',
-            lineHeight: '1.5'
-          }}
-        />
+                  // 컨텐츠 스타일
+                  content_style: `
+                    body {
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                      font-size: 14px;
+                      line-height: 1.6;
+                      padding: 10px;
+                    }
+                    img {
+                      max-width: 100%;
+                      height: auto;
+                      cursor: move;
+                    }
+                    img.mce-selected {
+                      outline: 2px solid #007bff;
+                    }
+                  `,
+
+                  // 드래그 앤 드롭으로 이미지 이동 허용
+                  paste_data_images: true,
+
+                  // 스킨 설정 (셀프 호스팅)
+                  skin: false,
+                  content_css: false,
+
+                  // 기본 설정
+                  branding: false,
+                  promotion: false,
+                  elementpath: false,
+
+                  // 테이블 설정
+                  table_responsive_width: true,
+                  table_default_styles: {
+                    width: '100%',
+                    borderCollapse: 'collapse'
+                  },
+
+                  // 링크 설정
+                  link_default_target: '_blank',
+
+                  // 포맷 설정
+                  formats: {
+                    alignleft: { selector: 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table,img', classes: 'left' },
+                    aligncenter: { selector: 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table,img', classes: 'center', styles: { textAlign: 'center', marginLeft: 'auto', marginRight: 'auto', display: 'block' } },
+                    alignright: { selector: 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table,img', classes: 'right' },
+                  },
+
+                  // 초기화 후 설정
+                  setup: (editor) => {
+                    editor.on('init', () => {
+                      // 초기 컨텐츠 설정
+                      if (content) {
+                        editor.setContent(content);
+                      }
+                    });
+                  }
+                }}
+              />
+            </div>
+          </Tab>
+
+          <Tab eventKey="html" title="HTML 소스">
+            <Form.Control
+              as="textarea"
+              rows={15}
+              placeholder="HTML 코드를 직접 입력하세요. 예: <p>안녕하세요, {{이름}}님!</p>"
+              value={htmlContent}
+              onChange={handleHtmlChange}
+              style={{
+                fontFamily: 'Monaco, Consolas, "Courier New", monospace',
+                fontSize: '13px',
+                lineHeight: '1.5',
+                backgroundColor: '#1e1e1e',
+                color: '#d4d4d4',
+                border: '1px solid #ced4da',
+                borderRadius: '0.375rem'
+              }}
+            />
+          </Tab>
+        </Tabs>
+
         <Form.Text className="text-muted">
-          HTML 태그를 직접 작성하거나 위의 버튼을 사용하세요.
+          <strong>비주얼 편집기:</strong> 이미지를 드래그하여 위치를 변경하고, 모서리를 드래그하여 크기를 조절할 수 있습니다.<br/>
+          <strong>HTML 소스:</strong> HTML 코드를 직접 편집할 수 있습니다.<br/>
           변수는 {`{{변수명}}`} 형식으로 입력합니다.
-          이미지를 삽입하려면 "이미지 업로드" 버튼을 클릭하세요.
         </Form.Text>
       </Form.Group>
     </div>
