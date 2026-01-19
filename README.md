@@ -35,54 +35,132 @@ git clone https://github.com/Two-Jay/email_auto_sender.git
 cd email_auto_sender
 ```
 
-### 2. 환경 변수 설정
+### 2. 자동 설치
 
-```bash
-cp .env.example .env
-# .env 파일을 열어 메일 계정 정보를 입력하세요
+#### Windows
+
+```cmd
+setup.bat
 ```
 
-### 3. 백엔드 설정
+실행 후 `.env` 파일을 열어 메일 계정 정보를 입력하세요.
 
+#### Linux/Mac
+
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
+실행 후 `.env` 파일을 열어 메일 계정 정보를 입력하세요.
+
+### 3. 수동 설치 (선택사항)
+
+<details>
+<summary>수동으로 설치하기</summary>
+
+**환경 변수 설정:**
+```bash
+# Windows
+copy .env.example .env
+
+# Linux/Mac
+cp .env.example .env
+```
+
+**백엔드 설정:**
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Windows
+venv\Scripts\activate
+
+# Linux/Mac
+source venv/bin/activate
+
 pip install -r requirements.txt
+cd ..
 ```
 
-### 4. 프론트엔드 설정
-
+**프론트엔드 설정:**
 ```bash
 cd frontend
 npm install
+cd ..
 ```
+
+</details>
 
 ## 실행 방법
 
-### 개발 모드
+### 🚀 빠른 시작 (권장)
+
+#### Windows
+
+**개발 모드:**
+```cmd
+dev.bat
+```
+
+**프로덕션 모드:**
+```cmd
+start.bat
+```
+
+**종료:**
+```cmd
+stop.bat
+```
+
+#### Linux/Mac
+
+**개발 모드:**
+```bash
+./dev.sh
+```
+
+**프로덕션 모드:**
+```bash
+./start.sh
+```
+
+**종료:**
+```bash
+./stop.sh
+```
+
+### 📝 수동 실행
+
+<details>
+<summary>수동으로 실행하기</summary>
 
 **백엔드 실행:**
 ```bash
 cd backend
+
+# Windows
+venv\Scripts\activate
+
+# Linux/Mac
 source venv/bin/activate
+
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-**프론트엔드 실행:**
+**프론트엔드 실행 (새 터미널):**
 ```bash
 cd frontend
 npm start
 ```
 
-### 프로덕션 모드
+</details>
 
-```bash
-# 자동 설치 및 실행 스크립트 사용
-chmod +x setup.sh start.sh
-./setup.sh
-./start.sh
-```
+### 접속
+
+- **프론트엔드**: http://localhost:3000
+- **백엔드 API**: http://localhost:8000
+- **API 문서**: http://localhost:8000/docs
 
 ## 사용 방법
 
@@ -119,11 +197,32 @@ chmod +x setup.sh start.sh
 - `email` 열은 필수
 - 나머지 열은 템플릿에서 사용할 변수명과 일치해야 함
 
-## API 문서
+## 필수 요구사항
 
-서버 실행 후 다음 주소에서 API 문서 확인:
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+### Windows
+- Python 3.9 이상
+- Node.js 16 이상
+- Git Bash 또는 CMD
+
+### Linux/Mac
+- Python 3.9 이상
+- Node.js 16 이상
+- Bash
+
+## Google 메일 설정
+
+Google 메일을 사용하려면 **앱 비밀번호**가 필요합니다:
+
+1. [Google 계정 설정](https://myaccount.google.com/) → 보안
+2. 2단계 인증 활성화
+3. 앱 비밀번호 생성
+4. 생성된 16자리 비밀번호를 `.env` 파일에 입력
+
+## Naver 메일 설정
+
+Naver 메일은 일반 비밀번호를 사용합니다:
+- SMTP 서버: smtp.naver.com
+- 포트: 587 (TLS)
 
 ## 라이센스
 
