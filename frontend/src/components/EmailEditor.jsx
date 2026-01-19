@@ -106,7 +106,7 @@ const EmailEditor = ({ subject, setSubject, content, setContent }) => {
         <Form.Label>내용</Form.Label>
         {uploadError && <Alert variant="danger">{uploadError}</Alert>}
         {uploading && <Alert variant="info">이미지 업로드 중...</Alert>}
-        <div style={{ marginBottom: '50px' }}>
+        <div className="quill-wrapper" style={{ marginBottom: '50px', minHeight: '450px' }}>
           <ReactQuill
             ref={quillRef}
             theme="snow"
@@ -118,6 +118,7 @@ const EmailEditor = ({ subject, setSubject, content, setContent }) => {
         </div>
         <Form.Text className="text-muted">
           이미지를 삽입하려면 툴바의 이미지 아이콘을 클릭하세요.
+          템플릿 변수를 사용하려면 {`{{변수명}}`} 형식으로 입력하세요.
         </Form.Text>
       </Form.Group>
     </div>

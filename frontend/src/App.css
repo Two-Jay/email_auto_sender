@@ -4,6 +4,11 @@
 }
 
 /* Quill Editor 커스터마이징 */
+.quill-wrapper {
+  background-color: white;
+  border-radius: 4px;
+}
+
 .quill {
   background-color: white;
 }
@@ -12,16 +17,20 @@
   background-color: #f8f9fa;
   border: 1px solid #ced4da !important;
   border-bottom: none !important;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
 }
 
 .ql-container {
   font-size: 16px;
   border: 1px solid #ced4da !important;
-  min-height: 400px;
+  min-height: 400px !important;
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
 }
 
 .ql-editor {
-  min-height: 400px;
+  min-height: 400px !important;
   max-height: 600px;
   overflow-y: auto;
 }
