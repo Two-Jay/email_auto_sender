@@ -31,6 +31,10 @@ import 'tinymce/plugins/wordcount';
 // TinyMCE 스킨 CSS
 import 'tinymce/skins/ui/oxide/skin.min.css';
 
+// TinyMCE 라이센스 키 설정
+// 환경 변수에 API 키가 있으면 사용, 없으면 GPL 셀프호스트 모드
+const TINYMCE_LICENSE_KEY = import.meta.env.VITE_TINYMCE_API_KEY || 'gpl';
+
 const EmailEditor = ({ subject, setSubject, content, setContent }) => {
   const editorRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -120,6 +124,7 @@ const EmailEditor = ({ subject, setSubject, content, setContent }) => {
                 }}
                 value={content}
                 onEditorChange={handleEditorChange}
+                licenseKey={TINYMCE_LICENSE_KEY}
                 init={{
                   height: 400,
                   menubar: true,
