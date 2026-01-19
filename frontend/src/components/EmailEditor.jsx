@@ -126,6 +126,7 @@ const EmailEditor = ({ subject, setSubject, content, setContent }) => {
                 onEditorChange={handleEditorChange}
                 licenseKey={TINYMCE_LICENSE_KEY}
                 init={{
+                  license_key: TINYMCE_LICENSE_KEY,
                   height: 400,
                   menubar: true,
                   plugins: [
