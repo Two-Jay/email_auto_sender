@@ -1,0 +1,66 @@
+.App {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+/* Quill Editor 커스터마이징 */
+.ql-container {
+  font-size: 16px;
+}
+
+.ql-editor {
+  min-height: 400px;
+}
+
+/* 버튼 스타일 */
+.btn {
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+/* 카드 스타일 */
+.card {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: none;
+}
+
+/* 테이블 반응형 */
+@media (max-width: 768px) {
+  .table {
+    font-size: 14px;
+  }
+}
+
+/* 로딩 스피너 */
+.spinner-border {
+  margin: 20px auto;
+}
+
+/* 배지 스타일 */
+.badge {
+  font-weight: normal;
+}
+
+/* 모달 */
+.modal-content {
+  border-radius: 8px;
+}
+
+/* 입력 폼 */
+.form-control:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* 탭 */
+.nav-tabs .nav-link {
+  color: #6c757d;
+}
+
+.nav-tabs .nav-link.active {
+  color: #0d6efd;
+  font-weight: 600;
+}
