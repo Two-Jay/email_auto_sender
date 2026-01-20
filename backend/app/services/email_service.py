@@ -3,6 +3,7 @@ import asyncio
 import re
 import uuid
 import mimetypes
+import base64
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
@@ -25,6 +26,8 @@ class EmailService:
     def _process_images_in_html(self, html_content: str) -> Tuple[str, List[Tuple[str, bytes, str]]]:
         """
         HTML 내 이미지를 CID 참조로 변환하고 이미지 데이터를 추출
+        - 로컬 파일 경로 (localhost:8000/uploads/, /uploads/)
+        - Base64 data URL (data:image/png;base64,...)
 
         Returns:
             Tuple[str, List[Tuple[str, bytes, str]]]:
@@ -44,31 +47,42 @@ class EmailService:
             img_url = match.group(2)
             after_src = match.group(3)
 
-            # localhost URL 또는 /uploads/ 경로 처리
-            local_path = None
-            if 'localhost:8000/uploads/' in img_url:
-                # http://localhost:8000/uploads/filename
-                filename = img_url.split('/uploads/')[-1]
-                local_path = os.path.join(settings.upload_dir, filename)
-            elif img_url.startswith('/uploads/'):
-                # /uploads/filename
-                filename = img_url[9:]  # '/uploads/' 제거
-                local_path = os.path.join(settings.upload_dir, filename)
+            image_data = None
+            mime_subtype = 'png'  # 기본값
 
-            if local_path and os.path.exists(local_path):
-                # CID 생성
-                cid = f"image_{uuid.uuid4().hex[:8]}"
+            # 1. Base64 data URL 처리
+            if img_url.startswith('data:image/'):
+                # data:image/png;base64,iVBORw0KGgo... 형식 파싱
+                data_match = re.match(r'data:image/([^;]+);base64,(.+)', img_url, re.DOTALL)
+                if data_match:
+                    mime_subtype = data_match.group(1)
+                    base64_data = data_match.group(2)
+                    try:
+                        image_data = base64.b64decode(base64_data)
+                    except Exception:
+                        return match.group(0)  # 디코딩 실패 시 원본 유지
 
-                # 이미지 파일 읽기
-                with open(local_path, 'rb') as f:
-                    image_data = f.read()
-
-                # MIME 타입 결정
-                mime_type, _ = mimetypes.guess_type(local_path)
-                if mime_type and mime_type.startswith('image/'):
-                    mime_subtype = mime_type.split('/')[1]
+            # 2. localhost URL 또는 /uploads/ 경로 처리
+            elif 'localhost:8000/uploads/' in img_url or img_url.startswith('/uploads/'):
+                if 'localhost:8000/uploads/' in img_url:
+                    filename = img_url.split('/uploads/')[-1]
                 else:
-                    mime_subtype = 'png'  # 기본값
+                    filename = img_url[9:]  # '/uploads/' 제거
+
+                local_path = os.path.join(settings.upload_dir, filename)
+                if os.path.exists(local_path):
+                    with open(local_path, 'rb') as f:
+                        image_data = f.read()
+
+                    # MIME 타입 결정
+                    mime_type, _ = mimetypes.guess_type(local_path)
+                    if mime_type and mime_type.startswith('image/'):
+                        mime_subtype = mime_type.split('/')[1]
+
+            # 이미지 데이터가 있으면 CID로 변환
+            if image_data:
+                # CID 생성
+                cid = f"img_{uuid.uuid4().hex[:12]}"
 
                 images_to_attach.append((cid, image_data, mime_subtype))
 
@@ -183,7 +197,10 @@ class EmailService:
             for cid, image_data, mime_subtype in embedded_images:
                 img = MIMEImage(image_data, _subtype=mime_subtype)
                 img.add_header("Content-ID", f"<{cid}>")
-                img.add_header("Content-Disposition", "inline", filename=f"{cid}.{mime_subtype}")
+                # filename 없이 inline만 설정 (Gmail/네이버 호환성)
+                img.add_header("Content-Disposition", "inline")
+                # Gmail 호환성을 위한 X-Attachment-Id
+                img.add_header("X-Attachment-Id", cid)
                 related_part.attach(img)
 
             message.attach(related_part)
@@ -200,7 +217,10 @@ class EmailService:
             for cid, image_data, mime_subtype in embedded_images:
                 img = MIMEImage(image_data, _subtype=mime_subtype)
                 img.add_header("Content-ID", f"<{cid}>")
-                img.add_header("Content-Disposition", "inline", filename=f"{cid}.{mime_subtype}")
+                # filename 없이 inline만 설정 (Gmail/네이버 호환성)
+                img.add_header("Content-Disposition", "inline")
+                # Gmail 호환성을 위한 X-Attachment-Id
+                img.add_header("X-Attachment-Id", cid)
                 message.attach(img)
 
         elif attachments:
