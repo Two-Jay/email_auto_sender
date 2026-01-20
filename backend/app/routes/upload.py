@@ -170,3 +170,124 @@ async def delete_image(filename: str):
             status_code=500,
             detail=f"이미지 삭제 중 오류 발생: {str(e)}"
         )
+
+
+# 첨부파일 관련 설정
+ATTACHMENT_ALLOWED_EXTENSIONS = [
+    '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+    '.txt', '.csv', '.zip', '.rar', '.7z',
+    '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'
+]
+MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024  # 10MB
+
+
+@router.post("/attachment")
+async def upload_attachment(file: UploadFile = File(...)):
+    """첨부파일 업로드"""
+
+    # 파일 확장자 확인
+    file_ext = os.path.splitext(file.filename)[1].lower()
+
+    if file_ext not in ATTACHMENT_ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"지원되지 않는 파일 형식입니다. 지원 형식: {', '.join(ATTACHMENT_ALLOWED_EXTENSIONS)}"
+        )
+
+    try:
+        # 파일 내용 읽기
+        contents = await file.read()
+
+        # 파일 크기 확인
+        if len(contents) > MAX_ATTACHMENT_SIZE:
+            raise HTTPException(
+                status_code=400,
+                detail=f"파일 크기가 너무 큽니다. 최대 {MAX_ATTACHMENT_SIZE // (1024 * 1024)}MB까지 업로드 가능합니다."
+            )
+
+        # 첨부파일 디렉토리 생성
+        attachments_dir = os.path.join(settings.upload_dir, "attachments")
+        os.makedirs(attachments_dir, exist_ok=True)
+
+        # 고유 파일명 생성 (타임스탬프 포함)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        # 파일명에서 안전하지 않은 문자 제거
+        safe_filename = "".join(c for c in file.filename if c.isalnum() or c in '.-_')
+        filename = f"{timestamp}_{safe_filename}"
+        file_path = os.path.join(attachments_dir, filename)
+
+        # 파일 저장
+        with open(file_path, "wb") as buffer:
+            buffer.write(contents)
+
+        return {
+            "success": True,
+            "message": "첨부파일이 업로드되었습니다",
+            "filename": filename,
+            "original_name": file.filename,
+            "path": file_path,
+            "size": len(contents)
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"첨부파일 업로드 중 오류 발생: {str(e)}"
+        )
+
+
+@router.get("/attachments")
+async def get_uploaded_attachments():
+    """업로드된 첨부파일 목록 조회"""
+    try:
+        attachments_dir = os.path.join(settings.upload_dir, "attachments")
+
+        if not os.path.exists(attachments_dir):
+            return {"attachments": []}
+
+        attachments = []
+        for filename in os.listdir(attachments_dir):
+            if filename == '.gitkeep':
+                continue
+
+            file_path = os.path.join(attachments_dir, filename)
+            file_size = os.path.getsize(file_path)
+
+            attachments.append({
+                "filename": filename,
+                "path": file_path,
+                "size": file_size
+            })
+
+        return {"attachments": attachments}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"첨부파일 목록 조회 중 오류 발생: {str(e)}"
+        )
+
+
+@router.delete("/attachment/{filename}")
+async def delete_attachment(filename: str):
+    """업로드된 첨부파일 삭제"""
+    try:
+        attachments_dir = os.path.join(settings.upload_dir, "attachments")
+        file_path = os.path.join(attachments_dir, filename)
+
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다")
+
+        os.remove(file_path)
+
+        return {"success": True, "message": "첨부파일이 삭제되었습니다"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"첨부파일 삭제 중 오류 발생: {str(e)}"
+        )

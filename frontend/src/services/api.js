@@ -51,6 +51,18 @@ export const uploadAPI = {
   },
   getImages: () => api.get('/upload/images'),
   deleteImage: (filename) => api.delete(`/upload/image/${filename}`),
+  // 첨부파일 API
+  uploadAttachment: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/upload/attachment', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+  getAttachments: () => api.get('/upload/attachments'),
+  deleteAttachment: (filename) => api.delete(`/upload/attachment/${filename}`),
 };
 
 // 이메일 API

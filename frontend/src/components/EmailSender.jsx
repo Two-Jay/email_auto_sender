@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Form,
   Button,
@@ -9,8 +9,8 @@ import {
   Badge,
   Modal,
 } from 'react-bootstrap';
-import { FaPaperPlane, FaEye } from 'react-icons/fa';
-import { emailAPI } from '../services/api';
+import { FaPaperPlane, FaEye, FaPaperclip, FaTrash, FaFile } from 'react-icons/fa';
+import { emailAPI, uploadAPI } from '../services/api';
 
 const EmailSender = ({ subject, content, recipients }) => {
   const [senderConfig, setSenderConfig] = useState({
@@ -25,6 +25,61 @@ const EmailSender = ({ subject, content, recipients }) => {
   const [error, setError] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [previewData, setPreviewData] = useState(null);
+  const [attachments, setAttachments] = useState([]);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // 첨부파일 크기 포맷
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // 첨부파일 업로드
+  const handleAttachmentUpload = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingAttachment(true);
+    setError('');
+
+    try {
+      for (const file of files) {
+        const response = await uploadAPI.uploadAttachment(file);
+        if (response.data.success) {
+          setAttachments(prev => [...prev, {
+            filename: response.data.filename,
+            originalName: response.data.original_name,
+            path: response.data.path,
+            size: response.data.size
+          }]);
+        }
+      }
+    } catch (error) {
+      console.error('Attachment upload error:', error);
+      setError(error.response?.data?.detail || '첨부파일 업로드에 실패했습니다.');
+    } finally {
+      setUploadingAttachment(false);
+      // 파일 input 초기화
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // 첨부파일 삭제
+  const handleAttachmentDelete = async (filename) => {
+    try {
+      await uploadAPI.deleteAttachment(filename);
+      setAttachments(prev => prev.filter(a => a.filename !== filename));
+    } catch (error) {
+      console.error('Attachment delete error:', error);
+      setError('첨부파일 삭제에 실패했습니다.');
+    }
+  };
 
   // 미리보기
   const handlePreview = async () => {
@@ -100,7 +155,7 @@ const EmailSender = ({ subject, content, recipients }) => {
           html_content: content,
         },
         cc: ccList,
-        attachments: [],
+        attachments: attachments.map(a => a.path),
       };
 
       const response = await emailAPI.sendBulk(requestData);
@@ -196,6 +251,61 @@ const EmailSender = ({ subject, content, recipients }) => {
         </Card.Body>
       </Card>
 
+      <Card className="mb-3">
+        <Card.Header>
+          <h5><FaPaperclip /> 첨부파일</h5>
+        </Card.Header>
+        <Card.Body>
+          <Form.Group className="mb-3">
+            <Form.Label>파일 선택</Form.Label>
+            <Form.Control
+              type="file"
+              ref={fileInputRef}
+              onChange={handleAttachmentUpload}
+              multiple
+              disabled={uploadingAttachment}
+            />
+            <Form.Text className="text-muted">
+              지원 형식: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, CSV, ZIP, RAR, 7Z, 이미지 파일 (최대 10MB)
+            </Form.Text>
+          </Form.Group>
+
+          {uploadingAttachment && (
+            <ProgressBar animated now={100} label="업로드 중..." className="mb-3" />
+          )}
+
+          {attachments.length > 0 && (
+            <ListGroup>
+              {attachments.map((attachment, index) => (
+                <ListGroup.Item
+                  key={index}
+                  className="d-flex justify-content-between align-items-center"
+                >
+                  <div>
+                    <FaFile className="me-2" />
+                    <span>{attachment.originalName}</span>
+                    <Badge bg="secondary" className="ms-2">
+                      {formatFileSize(attachment.size)}
+                    </Badge>
+                  </div>
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                    onClick={() => handleAttachmentDelete(attachment.filename)}
+                  >
+                    <FaTrash />
+                  </Button>
+                </ListGroup.Item>
+              ))}
+            </ListGroup>
+          )}
+
+          {attachments.length === 0 && !uploadingAttachment && (
+            <p className="text-muted mb-0">첨부된 파일이 없습니다.</p>
+          )}
+        </Card.Body>
+      </Card>
+
       {error && (
         <Alert variant="danger" dismissible onClose={() => setError('')}>
           {error}
@@ -270,6 +380,11 @@ const EmailSender = ({ subject, content, recipients }) => {
               {previewData.cc && previewData.cc.length > 0 && (
                 <p>
                   <strong>참조 (CC):</strong> {previewData.cc.join(', ')}
+                </p>
+              )}
+              {attachments.length > 0 && (
+                <p>
+                  <strong>첨부파일:</strong> {attachments.map(a => a.originalName).join(', ')}
                 </p>
               )}
               <hr />
