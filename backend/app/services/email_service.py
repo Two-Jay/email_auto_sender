@@ -165,14 +165,55 @@ class EmailService:
         # HTML에서 로컬 이미지 URL을 CID 참조로 변환
         processed_html, embedded_images = self._process_images_in_html(html_content)
 
-        # 최상위 메시지 객체 생성
-        # 구조: mixed (첨부파일) > related (인라인 이미지) > alternative > html
-        if attachments:
+        # MIME 구조 설계:
+        # - 인라인 이미지만: related > html + images
+        # - 첨부파일만: mixed > html + attachments
+        # - 둘 다: mixed > related (html + images) + attachments
+
+        if attachments and embedded_images:
+            # mixed > related > html + images, then attachments
             message = MIMEMultipart("mixed")
+            related_part = MIMEMultipart("related")
+
+            # HTML을 related의 첫 번째 파트로 추가
+            html_part = MIMEText(processed_html, "html", "utf-8")
+            related_part.attach(html_part)
+
+            # 인라인 이미지 첨부
+            for cid, image_data, mime_subtype in embedded_images:
+                img = MIMEImage(image_data, _subtype=mime_subtype)
+                img.add_header("Content-ID", f"<{cid}>")
+                img.add_header("Content-Disposition", "inline", filename=f"{cid}.{mime_subtype}")
+                related_part.attach(img)
+
+            message.attach(related_part)
+
         elif embedded_images:
+            # related > html + images (인라인 이미지만 있는 경우)
             message = MIMEMultipart("related")
+
+            # HTML을 첫 번째 파트로 추가 (중요!)
+            html_part = MIMEText(processed_html, "html", "utf-8")
+            message.attach(html_part)
+
+            # 인라인 이미지 첨부
+            for cid, image_data, mime_subtype in embedded_images:
+                img = MIMEImage(image_data, _subtype=mime_subtype)
+                img.add_header("Content-ID", f"<{cid}>")
+                img.add_header("Content-Disposition", "inline", filename=f"{cid}.{mime_subtype}")
+                message.attach(img)
+
+        elif attachments:
+            # mixed > html + attachments (첨부파일만 있는 경우)
+            message = MIMEMultipart("mixed")
+            html_part = MIMEText(processed_html, "html", "utf-8")
+            message.attach(html_part)
+
         else:
+            # 이미지도 첨부파일도 없는 경우
             message = MIMEMultipart("alternative")
+            html_part = MIMEText(processed_html, "html", "utf-8")
+            message.attach(html_part)
 
         message["Subject"] = subject
         message["From"] = f"{sender_name} <{sender_email}>" if sender_name else sender_email
@@ -181,42 +222,6 @@ class EmailService:
         # CC 추가
         if cc:
             message["Cc"] = ", ".join(cc)
-
-        # 인라인 이미지가 있는 경우 related 컨테이너 생성
-        if embedded_images:
-            if attachments:
-                # mixed > related > alternative
-                related_part = MIMEMultipart("related")
-                alternative_part = MIMEMultipart("alternative")
-                html_part = MIMEText(processed_html, "html", "utf-8")
-                alternative_part.attach(html_part)
-                related_part.attach(alternative_part)
-
-                # 인라인 이미지 첨부
-                for cid, image_data, mime_subtype in embedded_images:
-                    img = MIMEImage(image_data, _subtype=mime_subtype)
-                    img.add_header("Content-ID", f"<{cid}>")
-                    img.add_header("Content-Disposition", "inline", filename=f"{cid}.{mime_subtype}")
-                    related_part.attach(img)
-
-                message.attach(related_part)
-            else:
-                # related > alternative (message가 이미 related)
-                alternative_part = MIMEMultipart("alternative")
-                html_part = MIMEText(processed_html, "html", "utf-8")
-                alternative_part.attach(html_part)
-                message.attach(alternative_part)
-
-                # 인라인 이미지 첨부
-                for cid, image_data, mime_subtype in embedded_images:
-                    img = MIMEImage(image_data, _subtype=mime_subtype)
-                    img.add_header("Content-ID", f"<{cid}>")
-                    img.add_header("Content-Disposition", "inline", filename=f"{cid}.{mime_subtype}")
-                    message.attach(img)
-        else:
-            # 인라인 이미지가 없는 경우
-            html_part = MIMEText(processed_html, "html", "utf-8")
-            message.attach(html_part)
 
         # 첨부파일 추가
         if attachments:
