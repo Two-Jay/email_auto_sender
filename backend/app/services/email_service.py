@@ -49,8 +49,11 @@ class EmailService:
     ) -> MIMEMultipart:
         """이메일 메시지 생성"""
 
-        # 메시지 객체 생성
-        message = MIMEMultipart("alternative")
+        # 메시지 객체 생성 (첨부파일이 있으면 mixed, 없으면 alternative)
+        if attachments:
+            message = MIMEMultipart("mixed")
+        else:
+            message = MIMEMultipart("alternative")
         message["Subject"] = subject
         message["From"] = f"{sender_name} <{sender_email}>" if sender_name else sender_email
         message["To"] = recipient_email
@@ -71,9 +74,11 @@ class EmailService:
                         part = MIMEBase("application", "octet-stream")
                         part.set_payload(f.read())
                         encoders.encode_base64(part)
+                        filename = os.path.basename(file_path)
                         part.add_header(
                             "Content-Disposition",
-                            f"attachment; filename= {os.path.basename(file_path)}"
+                            "attachment",
+                            filename=("utf-8", "", filename)
                         )
                         message.attach(part)
 
